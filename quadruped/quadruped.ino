@@ -66,11 +66,12 @@ void setup() {
 }
 
 void loop() {
-  for(int i = 0; i < 4; i++){
-    Serial.print("Servo hip" + i); Serial.println(hipKneeArray[i].hip);
-    Serial.print("Servo knee" + i); Serial.println(hipKneeArray[i].knee);
+
+  int *test = &hipKneeArray[legD].knee;
+  *test += 50;
+ 
+    Serial.print("Servo knee"); Serial.println(hipKneeArray[legD].knee);
     delay(2000);
-  }
 }
 
 void moveForward(){
