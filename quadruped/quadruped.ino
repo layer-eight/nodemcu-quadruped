@@ -72,7 +72,7 @@ void moveForward(){
 
   //Move A target_45_AC and C target_90_AC
   //D++ and B++ as long as A and C move to target position
-  moveAll(target_45_AC, target_90_AC, false);
+  move_AB_toTarget(target_45_AC, target_90_AC);
 
   //Step D to target_90_BD
   stepPinValues_Down(legD, target_90_BD);
@@ -82,7 +82,7 @@ void moveForward(){
 
   //Move D target_45_BD and B target_90_BD
   //D++ and B++ as long as A and C move to target position
-  moveAll(target_45_BD, target_90_BD, true);
+  move_AB_toTarget(target_45_BD, target_90_BD);
 
   //Step A to target_90_AC
   stepPinValues_Up(legA, target_90_AC);
@@ -139,7 +139,7 @@ void stepPinValues_Up(int legNum, int target){
 //TODO Check the stuff that happens with the knees. find idea so the method can be used for servo A and C too
 // A and B have 150 as beginning position C and D beginn at 500
 //Step movement for servo which has a lower target position than the current pin value
-void stepPinValues_Down(int servoNum, int target){
+void stepPinValues_Down(int legNum, int target){
   bool moving = true;
   
   int* hip = &hipKneeArray[legNum].hip;
@@ -157,37 +157,38 @@ void stepPinValues_Down(int servoNum, int target){
       *knee +=2;
     }
     
-    moveLeg(servoNum,*hip,*knee);
+    moveLeg(legNum,*hip,*knee);
 
     if(*hip == target){
       moving = false;
     }
   }
 }
-// 
-void moveAll(int firstTarget, int secondTarget, bool isBD){
+//fistTarget Value is smaller than current pin value
+//secondTarget is higher than
+void move_AB_toTarget(int firstTarget, int secondTarget){
   bool moving = true;
 
-  int* hip1 = &hipA;
-  int* hip2 = &hipC;
-  int* hip3 = &hipB;
-  int* hip4 = &hipD;
-  if (isBD){
-    hip1 = &hipB;
-    hip2 = &hipD;
-    hip3 = &hipA;
-    hip4 = &hipC;
-  }
+  int* hip1 = &hipKneeArray[legA].hip;
+  int* hip2 = &hipKneeArray[legC].hip;
+  int* hip3 = &hipKneeArray[legB].hip;
+  int* hip4 = &hipKneeArray[legD].hip;
 
-  int decreaseHip1 = *hip1;
-  int increaseHip1 = *hip2;
-  int decreaseHip2 = *hip1;
-  int increaseHip2 = *hip2;
   while(moving){
-
+    if(*hip1 > firstTarget){
+      *hip1--;
+      pwm.setPin(legA,*hip1,false);
+    }
+    if (*hip2 < secondTarget){
+      *hip2--;
+      pwm.setPin(legC, *hip2, false);
+    }
+    *hip3--;
+    *hip4++;
+    pwm.setPin(legB, *hip3, false);
+    pwm.setPin(legB, *hip4, false);
     
-    
-    if((decreaseHip1 == firstTarget)&&(increaseHip1 == secondTarget)){
+    if((*hip1 == firstTarget)&&( *hip2 == secondTarget)){
       moving = false;
     }
   }
