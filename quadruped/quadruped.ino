@@ -21,8 +21,21 @@ typedef struct hipKneeStruct{
 
 hipKneeStruct hipKneeArray[4];
 
+//Target positions for Servo A and Servo C about 90 degree angle, one step and about 45 degrees
+int target_90_AC = 330;
+int target_step_AC = 170;
+int target_45_AC = 250;
 
+//Target positions for Servo B and Servo D about 90 degree angle, one step and about 45 degrees
+int target_90_BD = 310;
+int target_step_BD = 470;
+int target_45_BD = 390;
 
+//void moveLeg(int servo, int hipTarget, int kneeTarget);
+//void moveForward();
+//void stepPinValues_Up(int legNum, int target);
+//void stepPinValues_Down(int legNum, int target);
+//void moveHip(int firstTarget, int secondTarget, bool isAC);
 
 
 void setup() {
@@ -53,26 +66,23 @@ void setup() {
 }
 
 void loop() {
-
+  for(int i = 0; i < 4; i++){
+    Serial.print("Servo hip" + i); Serial.println(hipKneeArray[i].hip);
+    Serial.print("Servo knee" + i); Serial.println(hipKneeArray[i].knee);
+    delay(2000);
+  }
 }
 
 void moveForward(){
-  //Target position for Servo A and Servo C about 90 degree angle, one step and about 45 degrees
-  int target_90_AC = 330;
-  int target_step_AC = 170;
-  int target_45_AC = 250;
   
-  //Target position for Servo B and Servo D about 90 degree angle, one step and about 45 degrees
-  int target_90_BD = 310;
-  int target_step_BD = 470;
-  int target_45_BD = 390;
+  initWalkingStance();
 
   //Step B to target_step_BD
   stepPinValues_Up(legB, target_step_BD);
 
   //Move A target_45_AC and C target_90_AC
   //D++ and B++ as long as A and C move to target position
-  move_AB_toTarget(target_45_AC, target_90_AC);
+  moveHip(target_45_AC, target_90_AC, true);
 
   //Step D to target_90_BD
   stepPinValues_Down(legD, target_90_BD);
@@ -82,7 +92,7 @@ void moveForward(){
 
   //Move D target_45_BD and B target_90_BD
   //D++ and B++ as long as A and C move to target position
-  move_AB_toTarget(target_45_BD, target_90_BD);
+  moveHip(target_45_BD, target_90_BD, false);
 
   //Step A to target_90_AC
   stepPinValues_Up(legA, target_90_AC);
@@ -101,6 +111,19 @@ void turnRight(){
 void turnLeft(){
   
 }
+
+void initWalkingStance(){
+  //Initial hip values
+  hipKneeArray[legA].hip = 330;
+  hipKneeArray[legB].hip = 310;
+  hipKneeArray[legC].hip = 250;
+  hipKneeArray[legD].hip = 390;
+  
+  for(int i = 0; i<4;i++){
+    pwm.setPin(i,hipKneeArray[i].hip,false);
+  }
+}
+
 
 
 
@@ -166,13 +189,19 @@ void stepPinValues_Down(int legNum, int target){
 }
 //fistTarget Value is smaller than current pin value
 //secondTarget is higher than
-void move_AB_toTarget(int firstTarget, int secondTarget){
+void moveHip(int firstTarget, int secondTarget, bool isAC){
   bool moving = true;
 
   int* hip1 = &hipKneeArray[legA].hip;
   int* hip2 = &hipKneeArray[legC].hip;
   int* hip3 = &hipKneeArray[legB].hip;
-  int* hip4 = &hipKneeArray[legD].hip;
+  int* hip4 = &hipKneeArray[legD].hip; 
+  if(!isAC){
+    int* hip1 = &hipKneeArray[legB].hip;
+    int* hip2 = &hipKneeArray[legD].hip;
+    int* hip3 = &hipKneeArray[legA].hip;
+    int* hip4 = &hipKneeArray[legC].hip;
+  }
 
   while(moving){
     if(*hip1 > firstTarget){
@@ -193,6 +222,7 @@ void move_AB_toTarget(int firstTarget, int secondTarget){
     }
   }
 }
+
 
 //Method that sets pin value for both knee and hip joint
 void moveLeg(int servo, int hipTarget, int kneeTarget){
