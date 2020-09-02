@@ -58,46 +58,41 @@ void setup() {
   hipKneeArray[legC].hip = 250;
   hipKneeArray[legC].knee = 500;
   hipKneeArray[legD].hip = 390;
-  hipKneeArray[legD].knee = 500;
+  hipKneeArray[legD].knee = 500;   
   
   for(int i = 0; i<4;i++){
     moveLeg(i,hipKneeArray[i].hip,hipKneeArray[i].knee);
   }
+  delay(100);
 }
 
 void loop() {
-
-  int *test = &hipKneeArray[legD].knee;
-  *test += 50;
- 
-    Serial.print("Servo knee"); Serial.println(hipKneeArray[legD].knee);
-    delay(2000);
+  moveForward();
 }
 
 void moveForward(){
   
   initWalkingStance();
 
-  //Step B to target_step_BD
-  stepPinValues_Up(legB, target_step_BD);
+  //Step D to target_step_BD
+  stepPinValues_Up(legD, target_step_BD);
 
-  //Move A target_45_AC and C target_90_AC
-  //D++ and B++ as long as A and C move to target position
-  moveHip(target_45_AC, target_90_AC, true);
+  //Move C target_45_AC and A target_90_AC
+  //B++ and D++ as long as C and A move to target position
+  moveHip(target_90_AC, target_45_AC, true);
 
-  //Step D to target_90_BD
-  stepPinValues_Down(legD, target_90_BD);
+  //Step B to target_90_BD
+  stepPinValues_Down(legB, target_90_BD);
 
-  //Step C to target_step_AC
-  stepPinValues_Down(legC, target_step_AC);
+  //Step A to target_step_AC
+  stepPinValues_Down(legA, target_step_AC);
 
-  //Move D target_45_BD and B target_90_BD
-  //D++ and B++ as long as A and C move to target position
+  //Move B target_45_BD and D target_90_BD
+  //A++ and C++ as long as B and D move to target position
   moveHip(target_45_BD, target_90_BD, false);
 
-  //Step A to target_90_AC
-  stepPinValues_Up(legA, target_90_AC);
-
+  //Step C to target_90_AC
+  stepPinValues_Up(legC, target_90_AC);
 }
 
 //TODO 
@@ -115,18 +110,15 @@ void turnLeft(){
 
 void initWalkingStance(){
   //Initial hip values
-  hipKneeArray[legA].hip = 330;
-  hipKneeArray[legB].hip = 310;
-  hipKneeArray[legC].hip = 250;
-  hipKneeArray[legD].hip = 390;
+  hipKneeArray[legA].hip = 250;
+  hipKneeArray[legB].hip = 390;
+  hipKneeArray[legC].hip = 330;
+  hipKneeArray[legD].hip = 310;
   
   for(int i = 0; i<4;i++){
     pwm.setPin(i,hipKneeArray[i].hip,false);
   }
 }
-
-
-
 
 //TODO Check the stuff that happens with the knees. find idea so the method can be used for servo B and D too
 // A and B have 150 as beginning position C and D beginn at 500
@@ -135,30 +127,30 @@ void initWalkingStance(){
 void stepPinValues_Up(int legNum, int target){
   bool moving = true;
   
-  int* hip = &hipKneeArray[legNum].hip;
-  int* knee = &hipKneeArray[legNum].knee;
-  int hipStart = *hip;
-
+  int hip = hipKneeArray[legNum].hip;
+  int knee = hipKneeArray[legNum].knee;
+  int hipStart = hip;
+  
   while(moving){
-    if(*hip < target){
-      *hip++;
+    if(hip < target){
+      hip++;
     }
     
-    if(*hip <= hipStart + ((target - hipStart)/2)){
-      *knee +=2;
+    if(hip <= hipStart + ((target - hipStart)/2)){
+      knee -=2;
     }else{
-      *knee -=2;
+      knee +=2;
     }
+    //Serial.printf("hip: %d, knee: %d\n", hip, knee);
+    moveLeg(legNum,hip,knee);
     
-    moveLeg(legNum,*hip,*knee);
-
-    if(*hip == target){
+    if(hip == target){
       moving = false;
+      hipKneeArray[legNum].hip = hip;
+      hipKneeArray[legNum].knee = knee;
     }
   }
 }
-
-
 
 //TODO Check the stuff that happens with the knees. find idea so the method can be used for servo A and C too
 // A and B have 150 as beginning position C and D beginn at 500
@@ -166,64 +158,95 @@ void stepPinValues_Up(int legNum, int target){
 void stepPinValues_Down(int legNum, int target){
   bool moving = true;
   
-  int* hip = &hipKneeArray[legNum].hip;
-  int* knee = &hipKneeArray[legNum].knee;
-  int hipStart = *hip;
+  int hip = hipKneeArray[legNum].hip;
+  int knee = hipKneeArray[legNum].knee;
+  int hipStart = hip;
 
   while(moving){
-    if(*hip > target){
-      *hip--;
+    if(hip > target){
+      hip--;
     }
     
-    if(*hip >= target + ((hipStart - target)/2)){
-      *knee -=2;
+    if(hip >= target + ((hipStart - target)/2)){
+      knee +=2;
     }else{
-      *knee +=2;
+      knee -=2;
     }
     
-    moveLeg(legNum,*hip,*knee);
+    moveLeg(legNum,hip,knee);
 
-    if(*hip == target){
+    if(hip == target){
       moving = false;
+      hipKneeArray[legNum].hip = hip;
+      hipKneeArray[legNum].knee = knee;
     }
   }
 }
+
 //fistTarget Value is smaller than current pin value
 //secondTarget is higher than
 void moveHip(int firstTarget, int secondTarget, bool isAC){
   bool moving = true;
 
-  int* hip1 = &hipKneeArray[legA].hip;
-  int* hip2 = &hipKneeArray[legC].hip;
-  int* hip3 = &hipKneeArray[legB].hip;
-  int* hip4 = &hipKneeArray[legD].hip; 
+  int hip1 = hipKneeArray[legA].hip;
+  int hip2 = hipKneeArray[legC].hip;
+  int hip3 = hipKneeArray[legB].hip;
+  int hip4 = hipKneeArray[legD].hip; 
   if(!isAC){
-    int* hip1 = &hipKneeArray[legB].hip;
-    int* hip2 = &hipKneeArray[legD].hip;
-    int* hip3 = &hipKneeArray[legA].hip;
-    int* hip4 = &hipKneeArray[legC].hip;
+    hip1 = hipKneeArray[legB].hip;
+    hip2 = hipKneeArray[legD].hip;
+    hip3 = hipKneeArray[legA].hip;
+    hip4 = hipKneeArray[legC].hip;
   }
 
   while(moving){
-    if(*hip1 > firstTarget){
-      *hip1--;
-      pwm.setPin(legA,*hip1,false);
+    if(hip1 < firstTarget){
+      hip1++;
+      if(isAC){
+        pwm.setPin(legA,hip1,false);
+      }else{
+        pwm.setPin(legB,hip1,false);
+      }
     }
-    if (*hip2 < secondTarget){
-      *hip2--;
-      pwm.setPin(legC, *hip2, false);
+    if (hip2 > secondTarget){
+      hip2--;
+      if(isAC){
+        pwm.setPin(legC, hip2, false);
+      }else{
+        pwm.setPin(legD, hip2, false);
+      }
     }
-    *hip3--;
-    *hip4++;
-    pwm.setPin(legB, *hip3, false);
-    pwm.setPin(legB, *hip4, false);
     
-    if((*hip1 == firstTarget)&&( *hip2 == secondTarget)){
+    hip3++;
+    hip4--;
+    
+    if(isAC){
+      pwm.setPin(legB, hip3, false);
+      pwm.setPin(legD, hip4, false);
+    }else{
+      pwm.setPin(legA, hip3, false);
+      pwm.setPin(legC, hip4, false);
+    }
+
+    //Serial.printf("hip1: %d, hip2: %d, hip3: %d, hip4: %d\n", hip1, hip2, hip3, hip4);
+    
+    if((hip1 == firstTarget)&&( hip2 == secondTarget)){
       moving = false;
+
+      if(isAC){
+        hipKneeArray[legA].hip = hip1;
+        hipKneeArray[legC].hip = hip2;
+        hipKneeArray[legB].hip = hip3;
+        hipKneeArray[legD].hip = hip4;
+      }else{
+        hipKneeArray[legB].hip = hip1;
+        hipKneeArray[legD].hip = hip2;
+        hipKneeArray[legA].hip = hip3;
+        hipKneeArray[legC].hip = hip4;
+      }
     }
   }
 }
-
 
 //Method that sets pin value for both knee and hip joint
 void moveLeg(int servo, int hipTarget, int kneeTarget){
