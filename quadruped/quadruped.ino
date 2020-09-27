@@ -14,6 +14,10 @@ enum legEnum {
   legA, legB, legC, legD
 };
 
+enum direction {
+  forward, backward, right, left
+};
+
 typedef struct hipKneeStruct{
   int hip;
   int knee;
@@ -31,12 +35,11 @@ int target_90_BD = 310;
 int target_step_BD = 470;
 int target_45_BD = 390;
 
-//void moveLeg(int servo, int hipTarget, int kneeTarget);
-//void moveForward();
-//void stepPinValues_Up(int legNum, int target);
-//void stepPinValues_Down(int legNum, int target);
-//void moveHip(int firstTarget, int secondTarget, bool isAC);
-
+//init positions for the Servos
+int init_hip_AC = 250;
+int init_hip_BD = 390;
+int init_knee_AB = 150;
+int init_knee_CD = 500;
 
 void setup() {
   //Initialize Serial communication
@@ -51,14 +54,14 @@ void setup() {
   delay(10);
 
   //Initial hip and knee values
-  hipKneeArray[legA].hip = 250;
-  hipKneeArray[legA].knee = 150;
-  hipKneeArray[legB].hip = 390;
-  hipKneeArray[legB].knee = 150;
-  hipKneeArray[legC].hip = 250;
-  hipKneeArray[legC].knee = 500;
-  hipKneeArray[legD].hip = 390;
-  hipKneeArray[legD].knee = 500;   
+  hipKneeArray[legA].hip = init_hip_AC;
+  hipKneeArray[legA].knee = init_knee_AB;
+  hipKneeArray[legB].hip = init_hip_BD;
+  hipKneeArray[legB].knee = init_knee_AB;
+  hipKneeArray[legC].hip = init_hip_AC;
+  hipKneeArray[legC].knee = init_knee_CD;
+  hipKneeArray[legD].hip = init_hip_BD;
+  hipKneeArray[legD].knee = init_knee_CD;   
   
   for(int i = 0; i<4;i++){
     moveLeg(i,hipKneeArray[i].hip,hipKneeArray[i].knee);
@@ -67,7 +70,13 @@ void setup() {
 }
 
 void loop() {
-  moveForward();
+
+  //delay(500);
+
+  turnRight();
+  
+  //delay(10000000);
+  //moveForward();
 }
 
 void moveForward(){
@@ -79,7 +88,7 @@ void moveForward(){
 
   //Move C target_45_AC and A target_90_AC
   //B++ and D++ as long as C and A move to target position
-  moveHip(target_90_AC, target_45_AC, true);
+  moveHip(target_90_AC, target_45_AC, true, forward);
 
   //Step B to target_90_BD
   stepPinValues_Down(legB, target_90_BD);
@@ -89,7 +98,7 @@ void moveForward(){
 
   //Move B target_45_BD and D target_90_BD
   //A++ and C++ as long as B and D move to target position
-  moveHip(target_45_BD, target_90_BD, false);
+  moveHip(target_45_BD, target_90_BD, false, forward);
 
   //Step C to target_90_AC
   stepPinValues_Up(legC, target_90_AC);
@@ -99,10 +108,22 @@ void moveForward(){
 void moveBackward(){
   
 }
-//TODO
+
 void turnRight(){
-  
+
+  stepPinValues_Down(legA, target_step_AC);
+
+  stepPinValues_Down(legC, target_step_AC);
+
+  stepPinValues_Down(legB, target_90_BD);
+
+  stepPinValues_Down(legD, target_90_BD);
+
+  //Move C and A to init_hip_AC
+  //B++ and D++ as long as C and A move to target position
+  moveHip(init_hip_AC, init_hip_AC, true, right);
 }
+
 //TODO
 void turnLeft(){
   
@@ -120,26 +141,33 @@ void initWalkingStance(){
   }
 }
 
-//TODO Check the stuff that happens with the knees. find idea so the method can be used for servo B and D too
 // A and B have 150 as beginning position C and D beginn at 500
-//Method that implements single step for servo 0 and 2
-//Method only works in one direction currently
+//Step movement for servo which has a higher target position than the current pin value
 void stepPinValues_Up(int legNum, int target){
   bool moving = true;
   
   int hip = hipKneeArray[legNum].hip;
   int knee = hipKneeArray[legNum].knee;
   int hipStart = hip;
-  
+
   while(moving){
     if(hip < target){
       hip++;
     }
-    
-    if(hip <= hipStart + ((target - hipStart)/2)){
-      knee -=2;
-    }else{
-      knee +=2;
+
+    if (legNum == legC || legNum == legD)
+    {
+      if(hip <= hipStart + ((target - hipStart)/2)){
+        knee -=2;
+      }else{
+        knee +=2;
+      }
+    } else {
+      if(hip <= hipStart + ((target - hipStart)/2)){
+        knee +=2;
+      }else{
+        knee -=2;
+      }
     }
     //Serial.printf("hip: %d, knee: %d\n", hip, knee);
     moveLeg(legNum,hip,knee);
@@ -152,7 +180,6 @@ void stepPinValues_Up(int legNum, int target){
   }
 }
 
-//TODO Check the stuff that happens with the knees. find idea so the method can be used for servo A and C too
 // A and B have 150 as beginning position C and D beginn at 500
 //Step movement for servo which has a lower target position than the current pin value
 void stepPinValues_Down(int legNum, int target){
@@ -166,15 +193,24 @@ void stepPinValues_Down(int legNum, int target){
     if(hip > target){
       hip--;
     }
-    
-    if(hip >= target + ((hipStart - target)/2)){
-      knee +=2;
-    }else{
-      knee -=2;
-    }
-    
-    moveLeg(legNum,hip,knee);
 
+    if (legNum == legA || legNum == legB)
+    {
+      if(hip >= target + ((hipStart - target)/2)){
+        knee +=2;
+      }else{
+        knee -=2;
+      }
+    } else {
+      if(hip >= target + ((hipStart - target)/2)){
+        knee -=2;
+      }else{
+        knee +=2;
+      }
+    }
+    //Serial.printf("hip: %d, knee: %d\n", hip, knee);
+    moveLeg(legNum,hip,knee);
+    
     if(hip == target){
       moving = false;
       hipKneeArray[legNum].hip = hip;
@@ -185,7 +221,7 @@ void stepPinValues_Down(int legNum, int target){
 
 //fistTarget Value is smaller than current pin value
 //secondTarget is higher than
-void moveHip(int firstTarget, int secondTarget, bool isAC){
+void moveHip(int firstTarget, int secondTarget, bool isAC, direction directionState){
   bool moving = true;
 
   int hip1 = hipKneeArray[legA].hip;
@@ -202,23 +238,41 @@ void moveHip(int firstTarget, int secondTarget, bool isAC){
   while(moving){
     if(hip1 < firstTarget){
       hip1++;
-      if(isAC){
-        pwm.setPin(legA,hip1,false);
-      }else{
-        pwm.setPin(legB,hip1,false);
-      }
+    } else if (hip1 > firstTarget){
+      hip1--;
     }
     if (hip2 > secondTarget){
       hip2--;
+    } else if (hip2 < secondTarget) {
+      hip2++;
+    }
+
       if(isAC){
+        pwm.setPin(legA, hip1,false);
         pwm.setPin(legC, hip2, false);
       }else{
         pwm.setPin(legD, hip2, false);
+        pwm.setPin(legB, hip1,false);
       }
+
+    switch(directionState) {
+      case right:
+        hip3++;
+        hip4++;
+        break;
+      case left:
+        //TODO probably hip3-- & hip4--
+        break;
+      case forward:
+        hip3++;
+        hip4--;
+        break;
+      case backward:
+        //TODO
+        break;
+      default:
+        break;
     }
-    
-    hip3++;
-    hip4--;
     
     if(isAC){
       pwm.setPin(legB, hip3, false);
