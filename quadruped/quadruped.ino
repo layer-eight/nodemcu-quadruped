@@ -71,12 +71,46 @@ void setup() {
 
 void loop() {
 
-  //delay(500);
+  doTheWave(legA);
 
-  turnRight();
+  delay(2000);
+}
+
+//Currently only works with legA
+//TODO make it possible to wave with LegB too
+void doTheWave(int legNum) {
   
-  //delay(10000000);
-  //moveForward();
+  bool moving = true;
+  bool legIsRaised = false;
+  int waveCounter = 0;
+  int maxWaves = 8; //change this number to modify the wave quantity, should be a even number to be back to init position
+  int hip = hipKneeArray[legNum].hip;
+  int knee = hipKneeArray[legNum].knee;
+
+  while(moving){
+    if (knee < 500) {
+      knee++;
+    } else {
+      legIsRaised = true;
+    }
+    if(legIsRaised)
+    {
+      if(waveCounter % 2 == 0) {
+        hip--;
+      } else {
+        hip++;
+      }
+
+      if(hip == 150 || hip == init_hip_AC) {
+        waveCounter++;
+        if (waveCounter == maxWaves) {
+          moving = false;
+          knee = init_knee_AB;
+        }
+      }
+    }
+   moveLeg(legNum, hip, knee);
+  }
 }
 
 void moveForward(){
